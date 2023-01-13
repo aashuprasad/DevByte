@@ -16,3 +16,41 @@
  */
 
 package com.example.android.devbyteviewer.repository
+
+import android.view.animation.Transformation
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Transformations
+import com.example.android.devbyteviewer.database.VideosDatabase
+import com.example.android.devbyteviewer.database.asDomainModel
+import com.example.android.devbyteviewer.domain.Video
+import com.example.android.devbyteviewer.network.Network
+import com.example.android.devbyteviewer.network.asDatabaseModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+/*A Repository is just a regular class that has one (or more) methods
+ that load data without specifying the data source as part of the main
+  API. Because it's just a regular class, there's no need for an
+  annotation to define a repository. The repository hides the complexity
+   of managing the interactions between the database and the networking
+    code.
+
+You can define any API that makes sense for your data. Make your repo
+ take a VideosDatabase constructor parameter, this way you won’t have
+  any dependencies on Context in your repository (so called dependency
+   injection).
+*/
+
+//TODO: 8.Create repository class and define functions to refresh offline cache
+class VideosRepository(private val database: VideosDatabase){
+    val videos: LiveData<List<Video>> = Transformations.map(database.videoDao.getVideos()){
+        it.asDomainModel()
+    }
+
+    suspend fun refreshVideos(){
+        withContext(Dispatchers.IO){
+            val playlist = Network.devbytes.getPlaylist().await()
+            database.videoDao.insertAll(*playlist.asDatabaseModel())
+        }
+    }
+}

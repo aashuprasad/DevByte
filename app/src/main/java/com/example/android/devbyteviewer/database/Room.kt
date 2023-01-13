@@ -16,3 +16,40 @@
  */
 
 package com.example.android.devbyteviewer.database
+
+import android.content.Context
+import androidx.lifecycle.LiveData
+import androidx.room.*
+
+//TODO: 5.Implement VideoDao interface in Room
+@Dao
+interface VideoDao{
+    @Query("select * from databasevideo")
+    fun getVideos(): LiveData<List<DatabaseVideo>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertAll(vararg videos: DatabaseVideo)
+}
+
+//TODO: 6.Create an abstract VideosDatabase class that
+// extends RoomDatabase
+@Database(entities = [DatabaseVideo::class], version = 1)
+abstract class VideosDatabase: RoomDatabase(){
+    abstract val videoDao: VideoDao //abstract class cant create object
+}
+
+//TODO: 7.Use the singleton pattern to get an instance of the database.
+private lateinit var INSTANCE: VideosDatabase
+fun getDatabase(context: Context): VideosDatabase{
+    // Make sure your code is synchronized so it’s thread safe:
+    synchronized(VideosDatabase::class.java){
+        // to check if the variable has been initialized. If it hasn't,
+        // then initialize it.
+        if(!::INSTANCE.isInitialized){
+            INSTANCE = Room.databaseBuilder(context.applicationContext,
+            VideosDatabase::class.java,
+            "videos").build()
+        }
+    }
+    return INSTANCE
+}
